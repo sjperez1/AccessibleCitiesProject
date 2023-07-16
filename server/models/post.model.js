@@ -38,7 +38,6 @@ const PostSchema = new Schema({
     },
     imgURL : {
         type : String,
-        // required : [true, "An image URL must be included"]
     },
     user : {
         type : Schema.Types.ObjectId,
