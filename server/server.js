@@ -17,10 +17,8 @@ app.use(express.json())
 app.use(express.urlencoded({extended: true})) 
 app.use(cookieParser());
 
-
 // getting the routes. This format limits making a const Routes and adding the addition Routes(app) line below.
 require('./routes/user.routes')(app)
-
 
 // listen to the port
 app.listen(8000, ()=>console.log("Listening to the port 8000"))

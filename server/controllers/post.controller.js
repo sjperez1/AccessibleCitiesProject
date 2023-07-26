@@ -10,6 +10,7 @@ const {S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand} = requ
 // this requires the dotenv library and call its config function
 require('dotenv').config()
 
+
 const bucketName = process.env.BUCKET_NAME
 const bucketRegion = process.env.BUCKET_REGION
 const bucketAccessKey = process.env.BUCKET_ACCESS_KEY
@@ -23,14 +24,15 @@ const s3Bucket = new S3Client({ // the keys in this object must be written this 
     region: bucketRegion
 })
 
-const randName = () => crypto.randomBytes(32).toString('hex')
-const randImgName = randName()
+let randName = () => crypto.randomBytes(32).toString('hex')
+let randImgName;
 
 
 module.exports.allPosts = async (req, res) => {
     try {
         const postsPerPage = 6
         // whatever is after req.query will be the word in the URL that comes after the ? mark and before the equal sign. The query part is what makes the URL get setup this way. The following says go to the page number that is requested or 0
+        console.log(req.query)
         const page = parseInt(req.query.page || 0)
         const total = await Post.countDocuments({})
         const posts = await Post.find({})
@@ -47,19 +49,33 @@ module.exports.allPosts = async (req, res) => {
 
 module.exports.addPicture = async (req, res) => {
     let reqFile = req.file
-    const buffer = await sharp(reqFile.buffer).resize({height: 200, width: 200, fit: "contain"}).toBuffer()
-
-    const bucketInfo = {
+    // const buffer = await sharp(reqFile.buffer).resize({height: 10, width: 10}).toBuffer()
+//     const buffer = await sharp(reqFile.buffer).resize({height: 80, width: 80,
+// fit: sharp.fit.inside}).toBuffer()
+// const buffer = await sharp(req.file.buffer)
+//     .resize({ height: 300, width: null, fit: "inside" })
+//     .toBuffer();
+    await sharp(req.file.buffer)
+    .resize({ height: 300, width: null, fit: "cover" })
+    .toBuffer()
+        .then(async data => {
+            const bucketInfo = {
         Bucket: bucketName,
         Key: randImgName, // have to use this library because if images have the same name, they will be overwritten in the bucket. Using req.file.originalname would allow this to happen.
-        Body: buffer,
+        Body: data,
         // in req.file.buffer, buffer is targeting the actual image. The rest in req.file is information about the image.
         ContentType: reqFile.mimetype,
     }
-
+    console.log(bucketInfo["Key"])
+    
     const sendPicInfo = new PutObjectCommand(bucketInfo)
     await s3Bucket.send(sendPicInfo) // await since want this asynchronous
     res.send({})
+        })
+        .catch(err => console.log(err))
+
+    
+    
 }
 
 module.exports.addPost = async(req, res) => {
@@ -67,7 +83,8 @@ module.exports.addPost = async(req, res) => {
         // adding the post into the model
         const reqbody = req.body
         console.log(reqbody)
-        const newPost = Post(reqbody, reqbody["imgName"] = randImgName)
+        const newPost = Post(reqbody, reqbody["imgName"] = randName())
+        randImgName = reqbody["imgName"]
 
         console.log("post body", req.body)
         const decodedJWT = jwt.decode(req.cookies.usertoken, {complete: true})
@@ -94,11 +111,11 @@ module.exports.oneUserPost = async(req, res) => {
         const userId = decodedJWT.payload.id
         const postsPerPage = 6
         // whatever is after req.query will be the word in the URL that comes after the ? mark and before the equal sign. The query part is what makes the URL get setup this way. The following says go to the page number that is requested or 0
-        const userposts = await Post.find({user: userId})
         const page = parseInt(req.query.page || 0)
-        const total = await Post.countDocuments({})
+        const total = await Post.find({user: userId}).countDocuments({})
+        const userposts = await Post.find({user: userId})
             .limit(postsPerPage)
-            .skip(postsPerPage * page)
+            .skip((postsPerPage * page) >= 0 ? (postsPerPage * page) : 0)
             res.json({
                 totalPages: Math.ceil(total / postsPerPage),
                 userposts
@@ -137,24 +154,21 @@ module.exports.onePost = async (req, res)=>{
 
 module.exports.deletePost = (req, res)=>{
     const idFromParams = req.params.id
-    Post.deleteOne({_id: idFromParams})
-            .then(deleted=>res.json(deleted))
-            .catch(err=>res.json(err))
-    // // give criteria to get id from params to make _id
-    // Post.findOne({_id: idFromParams})
-    //     // cannot put res to the left of the arrow because res.json will look at that local res instead.
-    //     .then(async deletePost=>{
-    //         // console.log("deletePost", deletePost)
-    //         const objectParams = {
-    //             Bucket: bucketName,
-    //             Key: deletePost["imgName"],
-    //         }
-    //         const deleteRequest = new DeleteObjectCommand(objectParams)
-    //         await s3Bucket.send(deleteRequest)
+    // give criteria to get id from params to make _id
+    Post.findOne({_id: idFromParams})
+        // cannot put res to the left of the arrow because res.json will look at that local res instead.
+        .then(async deletePost=>{
+            // console.log("deletePost", deletePost)
+            const objectParams = {
+                Bucket: bucketName,
+                Key: deletePost["imgName"],
+            }
+            const deleteRequest = new DeleteObjectCommand(objectParams)
+            await s3Bucket.send(deleteRequest)
             
-    //         Post.deleteOne({_id: idFromParams})
-    //             .then(deleted=>res.json(deleted))
-    //             .catch(err=>res.json(err))
-    //     })
-    //     .catch(err=>res.json(err))
+            Post.deleteOne({_id: idFromParams})
+                .then(deleted=>res.json(deleted))
+                .catch(err=>res.json(err))
+        })
+        .catch(err=>res.json(err))
 }

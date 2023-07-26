@@ -12,22 +12,25 @@ const Dashboard = () => {
     const [search, setSearch] = useState("")
     const searchBy =["location", "features", "preview", "postBody"]
     const navigate = useNavigate()
-    // the following creates a new array with a certain number of things, specified in parentheses. These things will show up as empty, which can be seen if you console.log(new Array(4). The .fill() will actually give this number of empty things a value. The map function helps go through each of the values and put the index number in the array, so the number of pages array will start at zero and go up to numbeer of pages - 1.
+    // the following creates a new array with a certain number of things, specified in parentheses. These things will show up as empty, which can be seen if you console.log(new Array(4). The .fill() will actually give this number of empty things a value. The map function helps go through each of the values and put the index number in the array, so the number of pages array will start at zero and go up to number of pages - 1.
     const pages = new Array(numOfPages).fill(null).map((num, i) => i)
     // console.log(pages)
 
     useEffect(()=>{
         axios.get(`http://localhost:8000/api/posts?page=${pageNum}`)
             .then(res => {
-                    // console.log(res.data)
+                    console.log(res.data)
                     if(res.data){
                         setPosts(res.data.posts)
                         setNumOfPages(res.data.totalPages)
+                        if(pageNum >= res.data.totalPages) {
+                            setPageNum(res.data.totalPages - 1)
+                        }
                     }
             })
             // console.log('current pageNum'  + pageNum)
             .catch(err=>console.log(err))
-    },[pageNum]) // the new data will be retrieved when the page number is changed
+    },[pageNum, posts.length]) // the data for all posts will be retrieved again when the page number is changed 
 
     useEffect(() => {
         axios.get("http://localhost:8000/api/user/loggedinuser", {withCredentials: true})

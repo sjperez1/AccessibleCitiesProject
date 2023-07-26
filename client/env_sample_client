@@ -1,0 +1,2 @@
+To insert your API key for the Google Places API used for the post form, follow the following format in a .env file:
+REACT_APP_API="https://maps.googleapis.com/maps/api/js?key=InsertYourAPIKey&libraries=places&callback=initMap"

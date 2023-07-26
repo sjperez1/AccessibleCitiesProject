@@ -25,17 +25,22 @@ const UserPosts = () => {
                 console.log("couldn't get a logged in user: ", err)
                 navigate("/")
             })
-            axios.get(`http://localhost:8000/api/post/user?page=${pageNum}`, {withCredentials: true})
+        }, [pageNum, userPosts.length])
+
+    useEffect(() => {
+        axios.get(`http://localhost:8000/api/post/user?page=${pageNum}`, {withCredentials: true})
             .then(res => {
-                    // console.log(res.data)
                     if(res.data){
                         setUserPosts(res.data.userposts)
                         setNumOfPages(res.data.totalPages)
+                        if(pageNum >= res.data.totalPages) {
+                            setPageNum(res.data.totalPages - 1)
+                        }
                     }
             })
             // console.log('current pageNum'  + pageNum)
             .catch(err=>console.log(err))
-    }, [pageNum])
+    }, [pageNum, userPosts.length])
 
 
     const handleDelete = (delid) => {
@@ -75,64 +80,70 @@ const UserPosts = () => {
     
     return (
         <>
-            <div>
-                {
-                    user !== ""?
-                <>
-                    <h2 className='userWelcome'>Welcome {user.firstName} {user.lastName}!</h2>
-                    <div className="dropdown">
-                        <button className="btn dashboarduserbtn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            User Options
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li className="dropdown-item" onClick={viewPostHandler}>View your posts</li>
-                            <li className="dropdown-item" onClick={logoutHandler}>Logout</li>
-                        </ul>
-                    </div>
-                </>
-                    : <button className='btn dashboarduserbtn' onClick={loginNavigateHandler}>Login</button>
-                }
-            </div>
-        <h1 className='yourpoststext'>Browse Your Posts</h1>
-        <div>
-            <div className='searchouter'>
-                <input type="text" className="searchbox" placeholder='Search by location, accessibility features, short description, or full post' value={search} onChange={(e) => setSearch(e.target.value.toLowerCase())}/>
-            </div>
-            <p className='pageNumInfo'>Viewing page {pageNum + 1} of {numOfPages}</p>
-            <div className='outerpost'>
-                {
-                userPosts.filter((post) => 
-                // all of the parts that I want to be able to search by that are in the database have been put in an array called searchBy at the top. Doing searchBy.some is basically going through that array and saying search in this part of the data or this part of the data or this part... until it is done with that array. This limits the need to write a filter line for every type that that you want to be able to search by.
-                searchBy.some(searchBy => post[searchBy].toLowerCase().includes(search))
-                )
-                .map((post, i) => (
-                    <div className='post' key={i}>
-                        {console.log(post)}
-                        <h3>{post.location}</h3>
-                        <p>Looked for: {post.features}</p>
-                        <p>Created by: {post.createdBy} {moment(post.created).fromNow()}</p>
-                            <p>Post description: {post.preview}</p>
-                        <div className='buttondiv'>
-                            <Link to={`/post/view/${post._id}`} className='btn fullpost'>View full post</Link>
-                            {
-                                user.posts !== undefined && user.posts.includes(post._id)?
-                                <button className='btn deletebtn' onClick={(e) => handleDelete(post._id)}>Delete</button>
-                                : ""
-                            }
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-        <div className='pagebuttons'>
-            <button onClick={previousHandler} className='pagedirection pgbtns btn'>Previous</button>
             {
-                pages.map((page, i) => (
-                    <button key={i} onClick={() => pageNumHandler(page)} className='pagenumber pgbtns btn'>{page + 1}</button>
-                ))
+                userPosts.length > 0 ?
+            <>
+                <div>
+                    {
+                        user !== ""?
+                    <>
+                        <h2 className='userWelcome'>Welcome {user.firstName} {user.lastName}!</h2>
+                        <div className="dropdown">
+                            <button className="btn dashboarduserbtn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                User Options
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li className="dropdown-item" onClick={viewPostHandler}>View your posts</li>
+                                <li className="dropdown-item" onClick={logoutHandler}>Logout</li>
+                            </ul>
+                        </div>
+                    </>
+                        : <button className='btn dashboarduserbtn' onClick={loginNavigateHandler}>Login</button>
+                    }
+                </div>
+                <h1 className='yourpoststext'>Browse Your Posts</h1>
+                <div>
+                    <div className='searchouter'>
+                        <input type="text" className="searchbox" placeholder='Search by location, accessibility features, short description, or full post' value={search} onChange={(e) => setSearch(e.target.value.toLowerCase())}/>
+                    </div>
+                    <p className='pageNumInfo'>Viewing page {pageNum + 1} of {numOfPages}</p>
+                    <div className='outerpost'>
+                        {
+                        userPosts.filter((post) => 
+                        // all of the parts that I want to be able to search by that are in the database have been put in an array called searchBy at the top. Doing searchBy.some is basically going through that array and saying search in this part of the data or this part of the data or this part... until it is done with that array. This limits the need to write a filter line for every type that that you want to be able to search by.
+                        searchBy.some(searchBy => post[searchBy].toLowerCase().includes(search))
+                        )
+                        .map((post, i) => (
+                            <div className='post' key={i}>
+                                {console.log(post)}
+                                <h3>{post.location}</h3>
+                                <p>Looked for: {post.features}</p>
+                                <p>Created by: {post.createdBy} {moment(post.created).fromNow()}</p>
+                                    <p>Post description: {post.preview}</p>
+                                <div className='buttondiv'>
+                                    <Link to={`/post/view/${post._id}`} className='btn fullpost'>View full post</Link>
+                                    {
+                                        user.posts !== undefined && user.posts.includes(post._id)?
+                                        <button className='btn deletebtn' onClick={(e) => handleDelete(post._id)}>Delete</button>
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className='pagebuttons'>
+                    <button onClick={previousHandler} className='pagedirection pgbtns btn'>Previous</button>
+                    {
+                        pages.map((page, i) => (
+                            <button key={i} onClick={() => pageNumHandler(page)} className='pagenumber pgbtns btn'>{page + 1}</button>
+                        ))
+                    }
+                    <button onClick={nextHandler} className='pagedirection pgbtns btn'>Next</button>
+                </div>
+            </>
+                : <h1 className='yourpoststext'>You have not created a post yet!</h1>
             }
-            <button onClick={nextHandler} className='pagedirection pgbtns btn'>Next</button>
-        </div>
         </>
     )
 }

@@ -6,7 +6,7 @@ import '../views/dashboard.css'
 
 const ViewPost = () => {
     const [post, setPost] = useState()
-    const { id } = useParams()
+    const {id} = useParams()
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -29,7 +29,7 @@ const ViewPost = () => {
                         <h2>{post.location}</h2>
                         <h5>Looked for: {post.features}</h5>
                         <p>Created by: {post.createdBy} {moment(post.created).fromNow()}</p>
-                        <img src={post.imgURL} alt='Post picture' class="d-block w-100" width='50%' height='20%'></img>
+                        <img src={post.imgURL} alt='Showing accessibility feature' className="viewImage"></img>
                         <p>{post.postBody}</p>
                         <button type='button' onClick={handleDashboard} className='btn dashboardbtn'>Return to Dashboard</button>
                     </div>

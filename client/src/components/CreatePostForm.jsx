@@ -5,6 +5,7 @@ import moment from 'moment'
 import PlacesAutocomplete from '../components/Autocomplete'
 import '../components/createpost.css'
 
+
 const CreatePostForm = (props) => {
     const [location, setLocation] = useState("")
     const [features, setFeatures] = useState("")
@@ -23,7 +24,7 @@ const CreatePostForm = (props) => {
     const createAxios = () => {
         const formInfo = {createdBy: `${props.loggedInUser.firstName} ${props.loggedInUser.lastName}`, created: moment()._d, location, features, preview, postBody}
         axios.post(`http://localhost:8000/api/post`, formInfo, {withCredentials: true})
-            .then(res => navigate("/dashboard"))
+            .then(res => navigate(`/post/user/posts`))
             .catch(err=>{
                 console.log(formInfo)
                 const errMsgArr = [] // empty array to hold error messages
